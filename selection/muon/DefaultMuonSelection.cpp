@@ -9,109 +9,173 @@ static pxl::Logger logger("DefaultMuonSelection");
 
 class DefaultMuonSelection : public pxl::Module
 {
-private:
-        pxl::Source* _Source_selected;
-        pxl::Source* _Source_veto;
+    private:
+    pxl::Source* _sourceSelected;
+    pxl::Source* _sourceVeto;
 
-        int64_t _minEventNumber;
+    std::string _inputMuonName;
+    std::string _inputEventViewName;
+    std::string _tightMuonName;
+    std::string _looseMuonName;
+    bool _cleanEvent;
+    bool _vetoLooseMuons;
+    int64_t _maxTightMuons;
+    int64_t _minTightMuons;
 
-public:
-        DefaultMuonSelection() : Module(), _minEventNumber(1)
+    public:
+    DefaultMuonSelection() :
+        Module(),
+        _inputMuonName("Muon"),
+        _inputEventViewName("Reconstructed"),
+        _tightMuonName("TightMuon"),
+        _looseMuonName("LooseMuon"),
+        _cleanEvent(true),
+        _vetoLooseMuons(true),
+        _maxTightMuons(1),
+        _minTightMuons(1)
+    {
+        addSink("input", "Input");
+        _sourceVeto = addSource("veto", "veto");
+        _sourceSelected = addSource("selected", "Selected");
+
+        addOption("event view","name of the event view where muons are selected",_inputEventViewName);
+        addOption("input muon name","name of particles to consider for selection",_inputMuonName);
+        addOption("name of selected tight muons","",_tightMuonName);
+        addOption("name of selected loose muons","",_looseMuonName);
+        addOption("clean event","this option will clean the event of all muon falling tight or loose criteria",_cleanEvent);
+        addOption("veto loose muons","this option will veto all event with loose muons",_vetoLooseMuons);
+        addOption("max tight muons","veto events which have more tight muons",_maxTightMuons);
+        addOption("min tight muons","veto events which have less tight muons",_minTightMuons);
+
+    }
+
+    ~DefaultMuonSelection()
+    {
+    }
+
+    // every Module needs a unique type
+    static const std::string &getStaticType()
+    {
+        static std::string type ("DefaultMuonSelection");
+        return type;
+    }
+
+    // static and dynamic methods are needed
+    const std::string &getType() const
+    {
+        return getStaticType();
+    }
+
+    bool isRunnable() const
+    {
+        // this module does not provide events, so return false
+        return false;
+    }
+
+    void initialize() throw (std::runtime_error)
+    {
+    }
+
+    void beginJob() throw (std::runtime_error)
+    {
+        getOption("event view",_inputEventViewName);
+        getOption("input muon name",_inputMuonName);
+        getOption("name of selected tight muons",_tightMuonName);
+        getOption("name of selected loose muons",_looseMuonName);
+        getOption("clean event",_cleanEvent);
+        getOption("veto loose muons",_vetoLooseMuons);
+        getOption("max tight muons",_maxTightMuons);
+        getOption("min tight muons",_minTightMuons);
+    }
+
+    bool passTightCriteria(pxl::Particle* particle)
+    {
+        return particle->getPt()>30.0;
+    }
+
+    bool passLooseCriteria(pxl::Particle* particle)
+    {
+        return particle->getPt()>20.0;
+    }
+
+    bool analyse(pxl::Sink *sink) throw (std::runtime_error)
+    {
+        try
         {
-                addOption("minEventNumber", "select only events which have a UserRecord EventNumber > minEventNumber", int64_t(0));
-
-                addSink("input", "Input");
-                addSource("veto", "veto");
-                addSource("selected", "Selected");
-        }
-
-        ~DefaultMuonSelection()
-        {
-        }
-
-        // every Module needs a unique type
-        static const std::string &getStaticType()
-        {
-                static std::string type ("DefaultMuonSelection");
-                return type;
-        }
-
-        // static and dynamic methods are needed
-        const std::string &getType() const
-        {
-                return getStaticType();
-        }
-
-        bool isRunnable() const
-        {
-                // this module does not provide events, so return false
-                return false;
-        }
-
-        void initialize() throw (std::runtime_error)
-        {
-        }
-
-        void beginJob() throw (std::runtime_error)
-        {
-                getOption("minEventNumber", _minEventNumber);
-
-                //print the option:
-                        //first convert the int into a string
-                        std::stringstream str_minEventNumber;
-                        str_minEventNumber<<_minEventNumber;
-
-                        //then use the pxl:Logger
-                        logger(pxl::LOG_LEVEL_NONE, "Selecting only events which have an UserRecord 'EventNumber' > " + str_minEventNumber.str());
-
-                _Source_selected = getSource("selected");
-                _Source_veto = getSource("veto");
-        }
-
-        bool analyse(pxl::Sink *sink) throw (std::runtime_error)
-        {
-                try
+            pxl::Event *event  = dynamic_cast<pxl::Event *> (sink->get());
+            if (event)
+            {
+                int numTightMuons=0;
+                int numLooseMuons=0;
+                std::vector<pxl::EventView*> eventViews;
+                event->getObjectsOfType(eventViews);
+                for (unsigned ieventView=0; ieventView<eventViews.size();++ieventView)
                 {
-                        pxl::Event *event  = dynamic_cast<pxl::Event *> (sink->get());
+                    pxl::EventView* eventView = eventViews[ieventView];
+                    if (eventView->getName()==_inputEventViewName)
+                    {
+                        std::vector<pxl::Particle*> particles;
+                        eventView->getObjectsOfType(particles);
 
-                        if (event)
+                        for (unsigned iparticle=0; iparticle<particles.size();++iparticle)
                         {
-                                if (event->hasUserRecord("Event number"))
+                            pxl::Particle* particle = particles[iparticle];
+
+                            if (particle->getName()==_inputMuonName)
+                            {
+                                if (passTightCriteria(particle))
                                 {
-                                        unsigned int eventNumber = (unsigned int)(event->getUserRecord("Event number"));
+                                    particle->setName(_tightMuonName);
+                                    ++numTightMuons;
+                                } else if (passLooseCriteria(particle)) {
+                                    particle->setName(_looseMuonName);
+                                    ++numLooseMuons;
+                                } else if (_cleanEvent) {
+                                    eventView->removeObject(particle);
+                                }
 
-                                        if (eventNumber > _minEventNumber)
-                                        {
-                                                _Source_selected->setTargets(event);
-                                                return _Source_selected->processTargets();
-                                        }//else veto this event
-                                }//else veto this event
-
-                                _Source_veto->setTargets(event);
-                                return _Source_veto->processTargets();
+                            }
                         }
+
+                    }
                 }
-                catch(std::exception &e)
+                if (_vetoLooseMuons && numLooseMuons>0)
                 {
-                        throw std::runtime_error(getName()+": "+e.what());
+                    _sourceVeto->setTargets(event);
+                    return _sourceVeto->processTargets();
                 }
-                catch(...)
+
+                if (numTightMuons<=_maxTightMuons && numTightMuons>=_minTightMuons)
                 {
-                        throw std::runtime_error(getName()+": unknown exception");
+                    _sourceSelected->setTargets(event);
+                    return _sourceSelected->processTargets();
+                } else {
+                    _sourceVeto->setTargets(event);
+                    return _sourceVeto->processTargets();
                 }
-
-                logger(pxl::LOG_LEVEL_NONE, "Analysed event is not an pxl::Event !");
-                return false;
+            }
         }
-
-        void shutdown() throw(std::runtime_error)
+        catch(std::exception &e)
         {
+            throw std::runtime_error(getName()+": "+e.what());
+        }
+        catch(...)
+        {
+            throw std::runtime_error(getName()+": unknown exception");
         }
 
-        void destroy() throw (std::runtime_error)
-        {
-                delete this;
-        }
+        logger(pxl::LOG_LEVEL_ERROR , "Analysed event is not an pxl::Event !");
+        return false;
+    }
+
+    void shutdown() throw(std::runtime_error)
+    {
+    }
+
+    void destroy() throw (std::runtime_error)
+    {
+        delete this;
+    }
 };
 
 PXL_MODULE_INIT(DefaultMuonSelection)
