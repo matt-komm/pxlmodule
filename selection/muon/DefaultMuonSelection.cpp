@@ -18,7 +18,6 @@ class DefaultMuonSelection : public pxl::Module
     std::string _tightMuonName;
     std::string _looseMuonName;
     bool _cleanEvent;
-    bool _vetoLooseMuons;
     int64_t _maxTightMuons;
     int64_t _minTightMuons;
 
@@ -30,7 +29,6 @@ class DefaultMuonSelection : public pxl::Module
         _tightMuonName("TightMuon"),
         _looseMuonName("LooseMuon"),
         _cleanEvent(true),
-        _vetoLooseMuons(true),
         _maxTightMuons(1),
         _minTightMuons(1)
     {
@@ -42,8 +40,7 @@ class DefaultMuonSelection : public pxl::Module
         addOption("input muon name","name of particles to consider for selection",_inputMuonName);
         addOption("name of selected tight muons","",_tightMuonName);
         addOption("name of selected loose muons","",_looseMuonName);
-        addOption("clean event","this option will clean the event of all muon falling tight or loose criteria",_cleanEvent);
-        addOption("veto loose muons","this option will veto all event with loose muons",_vetoLooseMuons);
+        addOption("clean event","this option will clean the event of all muons falling tight or loose criteria",_cleanEvent);
         addOption("max tight muons","veto events which have more tight muons",_maxTightMuons);
         addOption("min tight muons","veto events which have less tight muons",_minTightMuons);
 
@@ -83,19 +80,72 @@ class DefaultMuonSelection : public pxl::Module
         getOption("name of selected tight muons",_tightMuonName);
         getOption("name of selected loose muons",_looseMuonName);
         getOption("clean event",_cleanEvent);
-        getOption("veto loose muons",_vetoLooseMuons);
         getOption("max tight muons",_maxTightMuons);
         getOption("min tight muons",_minTightMuons);
     }
 
     bool passTightCriteria(pxl::Particle* particle)
     {
-        return particle->getPt()>30.0;
+        if (not (particle->getPt()>26.0)) {
+            return false;
+        }
+        if (not (fabs(particle->getEta())<2.1)) {
+            return false;
+        }
+        if (not particle->getUserRecord("isPFMuon").toBool()) {
+            return false;
+        }
+        if (not particle->getUserRecord("isGlobalMuon").toBool()) {
+            return false;
+        }
+        if (not (particle->getUserRecord("chi2").toFloat()<10.0)) {
+            return false;
+        }
+        if (not (particle->getUserRecord("numberOfValidMuonHits").toInt32()>0)) {
+            return false;
+        }
+        if (not (particle->getUserRecord("numberOfMatchedStations").toInt32()>1)) {
+            return false;
+        }
+        if (not (fabs(particle->getUserRecord("dB").toFloat())<0.2)) {
+            return false;
+        }
+        if (not (fabs(particle->getUserRecord("dz").toFloat())<0.5)) {
+            return false;
+        }
+        if (not (particle->getUserRecord("numberOfValidPixelHits").toInt32()>0)) {
+            return false;
+        }
+        if (not (particle->getUserRecord("trackerLayersWithMeasurement").toInt32()>5)) {
+            return false;
+        }
+        if (not (particle->getUserRecord("relIso").toFloat()<0.12)) {
+            return false;
+        }
+        return true;
     }
 
     bool passLooseCriteria(pxl::Particle* particle)
     {
-        return particle->getPt()>20.0;
+        if (not (particle->getPt()>10.0)) {
+            return false;
+        }
+        if (not (fabs(particle->getEta())<2.5)) {
+            return false;
+        }
+        if (not (particle->getPt()>10.0)) {
+            return false;
+        }
+        if (not (particle->getUserRecord("relIso").toFloat()<0.2)) {
+            return false;
+        }
+        if (not (fabs(particle->getUserRecord("dB").toFloat())<0.2)) {
+            return false;
+        }
+        if (not (fabs(particle->getUserRecord("dz").toFloat())<0.5)) {
+            return false;
+        }
+        return true;
     }
 
     bool analyse(pxl::Sink *sink) throw (std::runtime_error)
@@ -139,7 +189,7 @@ class DefaultMuonSelection : public pxl::Module
 
                     }
                 }
-                if (_vetoLooseMuons && numLooseMuons>0)
+                if (numLooseMuons>0)
                 {
                     _sourceVeto->setTargets(event);
                     return _sourceVeto->processTargets();
