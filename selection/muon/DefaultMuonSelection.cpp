@@ -10,7 +10,11 @@ static pxl::Logger logger("DefaultMuonSelection");
 class DefaultMuonSelection : public pxl::Module
 {
     private:
-    pxl::Source* _sourceSelected;
+    pxl::Source* _sourceSelected_0muons;
+    pxl::Source* _sourceSelected_1muons;
+    pxl::Source* _sourceSelected_2muons;
+    pxl::Source* _sourceSelected_othermuons;
+
     pxl::Source* _sourceVeto;
 
     std::string _inputMuonName;
@@ -18,8 +22,6 @@ class DefaultMuonSelection : public pxl::Module
     std::string _tightMuonName;
     std::string _looseMuonName;
     bool _cleanEvent;
-    int64_t _maxTightMuons;
-    int64_t _minTightMuons;
 
     public:
     DefaultMuonSelection() :
@@ -28,22 +30,21 @@ class DefaultMuonSelection : public pxl::Module
         _inputEventViewName("Reconstructed"),
         _tightMuonName("TightMuon"),
         _looseMuonName("LooseMuon"),
-        _cleanEvent(true),
-        _maxTightMuons(1),
-        _minTightMuons(1)
+        _cleanEvent(true)
     {
         addSink("input", "Input");
         _sourceVeto = addSource("veto", "veto");
-        _sourceSelected = addSource("selected", "Selected");
+        _sourceSelected_othermuons = addSource(">2 muons", ">2 muons");
+        _sourceSelected_2muons = addSource("2 muons", "2 muons");
+        _sourceSelected_1muons = addSource("1 muons", "1 muons");
+        _sourceSelected_0muons = addSource("0 muons", "0 muons");
+
 
         addOption("event view","name of the event view where muons are selected",_inputEventViewName);
         addOption("input muon name","name of particles to consider for selection",_inputMuonName);
         addOption("name of selected tight muons","",_tightMuonName);
         addOption("name of selected loose muons","",_looseMuonName);
         addOption("clean event","this option will clean the event of all muons falling tight or loose criteria",_cleanEvent);
-        addOption("max tight muons","veto events which have more tight muons",_maxTightMuons);
-        addOption("min tight muons","veto events which have less tight muons",_minTightMuons);
-
     }
 
     ~DefaultMuonSelection()
@@ -80,8 +81,6 @@ class DefaultMuonSelection : public pxl::Module
         getOption("name of selected tight muons",_tightMuonName);
         getOption("name of selected loose muons",_looseMuonName);
         getOption("clean event",_cleanEvent);
-        getOption("max tight muons",_maxTightMuons);
-        getOption("min tight muons",_minTightMuons);
     }
 
     bool passTightCriteria(pxl::Particle* particle)
@@ -194,15 +193,23 @@ class DefaultMuonSelection : public pxl::Module
                     _sourceVeto->setTargets(event);
                     return _sourceVeto->processTargets();
                 }
-
-                if (numTightMuons<=_maxTightMuons && numTightMuons>=_minTightMuons)
+                pxl::Source* sourceSelected=0;
+                switch (numTightMuons)
                 {
-                    _sourceSelected->setTargets(event);
-                    return _sourceSelected->processTargets();
-                } else {
-                    _sourceVeto->setTargets(event);
-                    return _sourceVeto->processTargets();
+                    case 0:
+                        sourceSelected = _sourceSelected_0muons;
+                        break;
+                    case 1:
+                        sourceSelected = _sourceSelected_1muons;
+                        break;
+                    case 2:
+                        sourceSelected = _sourceSelected_2muons;
+                        break;
+                    default:
+                        sourceSelected = _sourceSelected_othermuons;
                 }
+                sourceSelected->setTargets(event);
+                return sourceSelected->processTargets();
             }
         }
         catch(std::exception &e)

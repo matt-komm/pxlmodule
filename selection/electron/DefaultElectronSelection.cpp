@@ -10,7 +10,11 @@ static pxl::Logger logger("DefaultElectronSelection");
 class DefaultElectronSelection : public pxl::Module
 {
     private:
-    pxl::Source* _sourceSelected;
+    pxl::Source* _sourceSelected_0electrons;
+    pxl::Source* _sourceSelected_1electrons;
+    pxl::Source* _sourceSelected_2electrons;
+    pxl::Source* _sourceSelected_otherelectrons;
+
     pxl::Source* _sourceVeto;
 
     std::string _inputElectronName;
@@ -18,8 +22,6 @@ class DefaultElectronSelection : public pxl::Module
     std::string _tightElectronName;
     std::string _looseElectronName;
     bool _cleanEvent;
-    int64_t _maxTightElectrons;
-    int64_t _minTightElectrons;
 
     public:
     DefaultElectronSelection() :
@@ -28,21 +30,20 @@ class DefaultElectronSelection : public pxl::Module
         _inputEventViewName("Reconstructed"),
         _tightElectronName("TightElectron"),
         _looseElectronName("LooseElectron"),
-        _cleanEvent(true),
-        _maxTightElectrons(1),
-        _minTightElectrons(1)
+        _cleanEvent(true)
     {
         addSink("input", "Input");
         _sourceVeto = addSource("veto", "veto");
-        _sourceSelected = addSource("selected", "Selected");
+        _sourceSelected_otherelectrons = addSource(">2 ele", ">2 ele");
+        _sourceSelected_2electrons = addSource("2 ele", "2 ele");
+        _sourceSelected_1electrons = addSource("1 ele", "1 ele");
+        _sourceSelected_0electrons = addSource("0 ele", "0 ele");
 
         addOption("event view","name of the event view where electrons are selected",_inputEventViewName);
         addOption("input electron name","name of particles to consider for selection",_inputElectronName);
         addOption("name of selected tight electrons","",_tightElectronName);
         addOption("name of selected loose electrons","",_looseElectronName);
         addOption("clean event","this option will clean the event of all electrons falling tight or loose criteria",_cleanEvent);
-        addOption("max tight electrons","veto events which have more tight electrons",_maxTightElectrons);
-        addOption("min tight electrons","veto events which have less tight electrons",_minTightElectrons);
 
     }
 
@@ -80,8 +81,6 @@ class DefaultElectronSelection : public pxl::Module
         getOption("name of selected tight electrons",_tightElectronName);
         getOption("name of selected loose electrons",_looseElectronName);
         getOption("clean event",_cleanEvent);
-        getOption("max tight electrons",_maxTightElectrons);
-        getOption("min tight electrons",_minTightElectrons);
     }
 
     bool passTriggerPreselection(pxl::Particle* particle)
@@ -245,15 +244,24 @@ class DefaultElectronSelection : public pxl::Module
                     _sourceVeto->setTargets(event);
                     return _sourceVeto->processTargets();
                 }
-
-                if (numTightElectrons<=_maxTightElectrons && numTightElectrons>=_minTightElectrons)
+                pxl::Source* sourceSelected=0;
+                switch (numTightElectrons)
                 {
-                    _sourceSelected->setTargets(event);
-                    return _sourceSelected->processTargets();
-                } else {
-                    _sourceVeto->setTargets(event);
-                    return _sourceVeto->processTargets();
+                    case 0:
+                        sourceSelected = _sourceSelected_0electrons;
+                        break;
+                    case 1:
+                        sourceSelected = _sourceSelected_1electrons;
+                        break;
+                    case 2:
+                        sourceSelected = _sourceSelected_2electrons;
+                        break;
+                    default:
+                        sourceSelected = _sourceSelected_otherelectrons;
                 }
+                sourceSelected->setTargets(event);
+                return sourceSelected->processTargets();
+
             }
         }
         catch(std::exception &e)
