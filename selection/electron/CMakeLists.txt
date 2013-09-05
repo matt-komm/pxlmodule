@@ -1,5 +1,6 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
 PROJECT (DefaultElectronSelection)
+ADD_DEFINITIONS(-std=c++0x)
 
 # Make sure FindPXL.cmake is found.
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -10,7 +11,7 @@ FIND_PACKAGE(PXL)
 # make sure the pxl modules code is linked
 ADD_PXL_PLUGIN(pxl-modules)
 LINK_DIRECTORIES(${PXL_LIBRARY_DIRS})
-INCLUDE_DIRECTORIES(${PXL_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR} ${PXL_INCLUDE_DIRS})
 
 # set the name of the plugin
 SET(PXL_MODULE_NAME DefaultElectronSelection)

@@ -24,8 +24,6 @@ class DefaultJetSelection : public pxl::Module
     std::string _inputEventViewName;
     std::string _selectedJetName;
     bool _cleanEvent;
-    int64_t _maxJets;
-    int64_t _minJets;
 
     public:
     DefaultJetSelection() :
