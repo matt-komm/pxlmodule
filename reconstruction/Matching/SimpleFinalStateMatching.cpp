@@ -32,6 +32,7 @@ class SimpleFinalStateMatching : public pxl::Module
     std::string _inputRecoBJetName;
     
     bool _discardBTagging;
+    bool _copyOnlyFinalParticles;
     
 
     public:
@@ -45,7 +46,8 @@ class SimpleFinalStateMatching : public pxl::Module
         _inputRecoMuonName("TightMuon"),
         _inputRecoJetName("SelectedJet"),
         _inputRecoBJetName("SelectedBJet"),
-        _discardBTagging(false)
+        _discardBTagging(false),
+        _copyOnlyFinalParticles(true)
     {
         _input = addSink("input", "input");
         _output = addSource("output", "output");
@@ -55,6 +57,7 @@ class SimpleFinalStateMatching : public pxl::Module
         addOption("output event view","generator event view",_outputEventViewName);
         
         addOption("discard bTagging","allows matches between jets and bjets",_discardBTagging);
+        addOption("copy only final","copies only the final state generator particles",_copyOnlyFinalParticles);
         
         addOption("reco met","name of the reconstructed met",_inputRecoMETName);
         addOption("reco electon","names of the reconstructed electon",_inputRecoElectronName);
@@ -97,6 +100,7 @@ class SimpleFinalStateMatching : public pxl::Module
         getOption("output event view",_outputEventViewName);
         
         getOption("discard bTagging",_discardBTagging);
+        getOption("copy only final",_copyOnlyFinalParticles);
         
         getOption("reco met",_inputRecoMETName);
         getOption("reco electon",_inputRecoElectronName);
@@ -124,52 +128,68 @@ class SimpleFinalStateMatching : public pxl::Module
         return particle->getDaughterRelations().size()==0;
     }
 
-    void addMatchToView(std::vector<pxl::Particle*>& gen, std::vector<pxl::Particle*>& reco,pxl::EventView* eventView)
+    void addMatchToView(std::vector<pxl::Particle*>& gen, std::vector<pxl::Particle*>& reco,pxl::EventView* eventView, float(*matchFunction)(const pxl::Particle*, const pxl::Particle*))
     {
         if (gen.size()<=reco.size())
         {
             for (unsigned igen=0; igen<gen.size(); ++igen)
             {
-                pxl::Particle* genMatch = eventView->create<pxl::Particle>();
-                genMatch->setName(gen[igen]->getName());
-                copyParticleProperties(genMatch,gen[igen]);
+                pxl::Particle* genMatch=gen[igen];
+                if (_copyOnlyFinalParticles)
+                {
+                    genMatch = eventView->create<pxl::Particle>();
+                    genMatch->setName(gen[igen]->getName());
+                    copyParticleProperties(genMatch,gen[igen]);
+                }
                 pxl::Particle* recoMatch = eventView->create<pxl::Particle>();
                 recoMatch->setName(reco[igen]->getName());
                 copyParticleProperties(recoMatch,reco[igen]);
                 recoMatch->linkMother(genMatch);
+                genMatch->setUserRecord("match value",matchFunction(genMatch,recoMatch));
             }
         }
         else
         {
             for (unsigned ireco=0; ireco<reco.size(); ++ireco)
             {
-                pxl::Particle* genMatch = eventView->create<pxl::Particle>();
-                genMatch->setName(gen[ireco]->getName());
-                copyParticleProperties(genMatch,gen[ireco]);
+                pxl::Particle* genMatch=gen[ireco];
+                if (_copyOnlyFinalParticles)
+                {
+                    genMatch = eventView->create<pxl::Particle>();
+                    genMatch->setName(gen[ireco]->getName());
+                    copyParticleProperties(genMatch,gen[ireco]);
+                }
                 pxl::Particle* recoMatch = eventView->create<pxl::Particle>();
                 recoMatch->setName(reco[ireco]->getName());
                 copyParticleProperties(recoMatch,reco[ireco]);
                 recoMatch->linkMother(genMatch);
+                genMatch->setUserRecord("match value",matchFunction(genMatch,recoMatch));
             }
         }
     }
 
-    void match(std::vector<pxl::Particle*>& gen, std::vector<pxl::Particle*>& reco)
+    static float deltaRmatch(const pxl::Particle* p1, const pxl::Particle* p2)
+    {
+        return p1->getVector().deltaR(p2->getVector());
+    }
+
+    void match(std::vector<pxl::Particle*>& gen, std::vector<pxl::Particle*>& reco, float(*matchFunction)(const pxl::Particle*, const pxl::Particle*))
     {
         std::vector<pxl::Particle*> bestMatch;
+        int permutation=0;
         if (gen.size()<=reco.size())
         {
             std::sort(reco.begin(),reco.end(),compare);
-            float mindR=1000.0;
+            float minMatchValue=1000.0;
             do {
-                float dR=0.0;
+                float matchValue=0.0;
                 for (unsigned igen=0; igen<gen.size(); ++igen)
                 {
-                    dR+=gen[igen]->getVector().deltaR(reco[igen]->getVector());
+                    matchValue+=matchFunction(gen[igen],reco[igen]);
                 }
-                if (mindR>dR)
+                if (minMatchValue>matchValue)
                 {
-                    mindR=dR;
+                    minMatchValue=matchValue;
                     bestMatch=std::vector<pxl::Particle*>();
                     for (unsigned ireco=0; ireco<reco.size(); ++ireco)
                     {
@@ -177,6 +197,7 @@ class SimpleFinalStateMatching : public pxl::Module
                     }
 
                 }
+                ++permutation;
             } while ( std::next_permutation(reco.begin(),reco.end(),compare));
             for (unsigned ireco=0; ireco<reco.size(); ++ireco)
             {
@@ -186,16 +207,16 @@ class SimpleFinalStateMatching : public pxl::Module
         else
         {
             std::sort(gen.begin(),gen.end(),compare);
-            float mindR=1000.0;
+            float minMatchValue=1000.0;
             do {
-                float dR=0.0;
+                float matchValue=0.0;
                 for (unsigned ireco=0; ireco<reco.size(); ++ireco)
                 {
-                    dR+=reco[ireco]->getVector().deltaR(gen[ireco]->getVector());
+                    matchValue+=matchFunction(gen[ireco],reco[ireco]);
                 }
-                if (mindR>dR)
+                if (minMatchValue>matchValue)
                 {
-                    mindR=dR;
+                    minMatchValue=matchValue;
                     bestMatch=std::vector<pxl::Particle*>();
                     for (unsigned igen=0; igen<gen.size(); ++igen)
                     {
@@ -203,12 +224,14 @@ class SimpleFinalStateMatching : public pxl::Module
                     }
 
                 }
+                ++permutation;
             } while ( std::next_permutation(gen.begin(),gen.end(),compare));\
             for (unsigned igen=0; igen<gen.size(); ++igen)
             {
                 gen[igen]=bestMatch[igen];
             }
         }
+        logger(pxl::LOG_LEVEL_DEBUG,"elements: ",std::max(gen.size(),reco.size()),"permutations: ",permutation);
     }
 
     bool analyse(pxl::Sink *sink) throw (std::runtime_error)
@@ -218,25 +241,20 @@ class SimpleFinalStateMatching : public pxl::Module
             pxl::Event *event  = dynamic_cast<pxl::Event *> (sink->get());
             if (event)
             {
-
-
-                pxl::EventView* outputEventView = event->create<pxl::EventView>();
-                outputEventView->setName(_outputEventViewName);
-
+                pxl::EventView* outputEventView;
                 std::vector<pxl::Particle*> genMuons;
                 std::vector<pxl::Particle*> genElectrons;
                 std::vector<pxl::Particle*> genQuarks;
                 std::vector<pxl::Particle*> genBQuarks;
-                pxl::Particle* genMET = outputEventView->create<pxl::Particle>();
+                pxl::Particle* genMET = new pxl::Particle();
                 genMET->setName("GenMET");
 
                 std::vector<pxl::Particle*> recoMuons;
                 std::vector<pxl::Particle*> recoElectrons;
                 std::vector<pxl::Particle*> recoJets;
                 std::vector<pxl::Particle*> recoBJets;
-                pxl::Particle* recoMET = outputEventView->create<pxl::Particle>();
+                pxl::Particle* recoMET = new pxl::Particle();
                 recoMET->setName(_inputRecoMETName);
-                recoMET->linkMother(genMET);
 
                 std::vector<pxl::EventView*> eventViews;
                 event->getObjectsOfType(eventViews);
@@ -245,8 +263,28 @@ class SimpleFinalStateMatching : public pxl::Module
                     pxl::EventView* eventView = eventViews[ieventView];
                     if (eventView->getName()==_inputGenEventViewName)
                     {
+                        if (_copyOnlyFinalParticles)
+                        {
+                            outputEventView=event->create<pxl::EventView>();
+                            outputEventView->setName(_outputEventViewName);
+                        }
+                        else
+                        {
+                            outputEventView=dynamic_cast<pxl::EventView*>(eventView->clone());
+                            outputEventView->setName(_outputEventViewName);
+                            event->insertObject(outputEventView);
+                        }
+
                         std::vector<pxl::Particle*> genParticles;
-                        eventView->getObjectsOfType(genParticles);
+                        //work directly with the already copied objects
+                        if (!_copyOnlyFinalParticles)
+                        {
+                            outputEventView->getObjectsOfType(genParticles);
+                        }
+                        else
+                        {
+                            eventView->getObjectsOfType(genParticles);
+                        }
                         for (unsigned iparticle=0; iparticle<genParticles.size();++iparticle)
                         {
                             pxl::Particle* particle = genParticles[iparticle];
@@ -322,16 +360,20 @@ class SimpleFinalStateMatching : public pxl::Module
                 }
                 
 
-                match(genMuons,recoMuons);
-                addMatchToView(genMuons,recoMuons,outputEventView);
-                match(genElectrons,recoElectrons);
-                addMatchToView(genElectrons,recoElectrons,outputEventView);
-                match(genQuarks,recoJets);
-                addMatchToView(genQuarks,recoJets,outputEventView);
-                match(genBQuarks,recoBJets);
-                addMatchToView(genBQuarks,recoBJets,outputEventView);
-                
+                float (*matchFunction)(const pxl::Particle*, const pxl::Particle*) = &SimpleFinalStateMatching::deltaRmatch;
 
+                match(genMuons,recoMuons,matchFunction);
+                addMatchToView(genMuons,recoMuons,outputEventView,matchFunction);
+                match(genElectrons,recoElectrons,matchFunction);
+                addMatchToView(genElectrons,recoElectrons,outputEventView,matchFunction);
+                match(genQuarks,recoJets,matchFunction);
+                addMatchToView(genQuarks,recoJets,outputEventView,matchFunction);
+                match(genBQuarks,recoBJets,matchFunction);
+                addMatchToView(genBQuarks,recoBJets,outputEventView,matchFunction);
+
+                outputEventView->insertObject(genMET);
+                outputEventView->insertObject(recoMET);
+                genMET->linkDaughter(recoMET);
 
                 _output->setTargets(event);
                 return _output->processTargets();
