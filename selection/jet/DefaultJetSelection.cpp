@@ -146,7 +146,9 @@ class DefaultJetSelection : public pxl::Module
                                     eventView->removeObject(particle);
                                 }
                             }
+
                         }
+                        eventView->setUserRecord("numJets",numJets);
                     }
                 }
                 pxl::Source* sourceSelected=0;

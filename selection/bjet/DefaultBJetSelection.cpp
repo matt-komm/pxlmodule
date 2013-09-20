@@ -143,6 +143,7 @@ class DefaultBJetSelection : public pxl::Module
                                 }
                             }
                         }
+                        eventView->setUserRecord("numBJets",numBJets);
                     }
                 }
                 pxl::Source* sourceSelected=0;
