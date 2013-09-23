@@ -145,7 +145,7 @@ class SimpleFinalStateMatching : public pxl::Module
                 recoMatch->setName(reco[igen]->getName());
                 copyParticleProperties(recoMatch,reco[igen]);
                 recoMatch->linkMother(genMatch);
-                genMatch->setUserRecord("match value",matchFunction(genMatch,recoMatch));
+                genMatch->setUserRecord("match_value",matchFunction(genMatch,recoMatch));
             }
         }
         else
