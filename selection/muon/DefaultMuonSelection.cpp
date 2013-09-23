@@ -106,7 +106,7 @@ class DefaultMuonSelection : public pxl::Module
         if (not (particle->getUserRecord("numberOfMatchedStations").toInt32()>1)) {
             return false;
         }
-        if (not (fabs(particle->getUserRecord("dB").toFloat())<0.2)) {
+        if (not (fabs(particle->getUserRecord("dxy").toFloat())<0.2)) {
             return false;
         }
         if (not (fabs(particle->getUserRecord("dz").toFloat())<0.5)) {
