@@ -362,6 +362,15 @@ class NeutrinoPz : public pxl::Module
                             neutrino=eventView->create<pxl::Particle>();
                             neutrino->setName(_neutrinoName);
                             solveNu4Momentum(neutrino,lepton->getVector(),met->getPx(),met->getPy());
+                            pxl::Particle p1;
+                            pxl::Particle p2;
+                            p1.getVector()+=met->getVector();
+                            p1.getVector()+=lepton->getVector();
+                            p2.getVector()+=neutrino->getVector();
+                            p2.getVector()+=lepton->getVector();
+                            neutrino->setUserRecord("mtw_beforePzSolution",sqrt(p1.getMass()*p1.getMass()+p1.getPx()*p1.getPx()+p1.getPy()*p1.getPy()));
+                            neutrino->setUserRecord("mtw_afterPzSolution",sqrt(p2.getMass()*p2.getMass()+p2.getPx()*p2.getPx()+p2.getPy()*p2.getPy()));
+                            //neutrino->setUserRecord("wmass_afterPzSolution",p2.getMass());
                         }
                     }
                 }
