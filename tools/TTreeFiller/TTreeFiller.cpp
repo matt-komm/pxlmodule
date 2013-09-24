@@ -137,6 +137,16 @@ class AccessorTree
             {
                 store->storeValue(event->getUserRecord(_field).toFloat(),getId(prefix,0));
             }
+            else if (_field=="All")
+            {
+                pxl::UserRecords ur = event->getUserRecords();
+                for (pxl::UserRecords::const_iterator it=ur.begin(); it!=ur.end();++it)
+                {
+                    _field=it->first;
+                    store->storeValue(it->second.toFloat(),getId(prefix,0));
+                }
+                _field="All";
+            }
             else
             {
                 std::vector<pxl::EventView*> eventViews;
@@ -159,6 +169,16 @@ class AccessorTree
             if (eventView->hasUserRecord(_field))
             {
                 store->storeValue(eventView->getUserRecord(_field).toFloat(),getId(prefix,0));
+            }
+            else if (_field=="All")
+            {
+                pxl::UserRecords ur = eventView->getUserRecords();
+                for (pxl::UserRecords::const_iterator it=ur.begin(); it!=ur.end();++it)
+                {
+                    _field=it->first;
+                    store->storeValue(it->second.toFloat(),getId(prefix,0));
+                }
+                _field="All";
             }
             else
             {
@@ -236,6 +256,32 @@ class AccessorTree
                     ++multiplicity;
                     evaluateChildren<pxl::Particle>(particles[iparticle],store,getId(prefix,multiplicity));
                 }
+            }
+            else if (_field=="All")
+            {
+                _field="Pt";
+                store->storeValue(particle->getPt(),getId(prefix,0));
+                _field="Eta";
+                store->storeValue(particle->getEta(),getId(prefix,0));
+                _field="Phi";
+                store->storeValue(particle->getPhi(),getId(prefix,0));
+                _field="Px";
+                store->storeValue(particle->getPx(),getId(prefix,0));
+                _field="Py";
+                store->storeValue(particle->getPy(),getId(prefix,0));
+                _field="Pz";
+                store->storeValue(particle->getPz(),getId(prefix,0));
+                _field="Mass";
+                store->storeValue(particle->getMass(),getId(prefix,0));
+                _field="Charge";
+                store->storeValue(particle->getCharge(),getId(prefix,0));
+                pxl::UserRecords ur = particle->getUserRecords();
+                for (pxl::UserRecords::const_iterator it=ur.begin(); it!=ur.end();++it)
+                {
+                    _field=it->first;
+                    store->storeValue(it->second.toFloat(),getId(prefix,0));
+                }
+                _field="All";
             }
         }
 
