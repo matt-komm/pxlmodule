@@ -203,6 +203,14 @@ class AccessorTree
             {
                 store->storeValue(particle->getUserRecord(_field),getId(prefix,0));
             }
+            else if (_field=="E")
+            {
+                store->storeValue(particle->getE(),getId(prefix,0));
+            }
+            else if (_field=="Et")
+            {
+                store->storeValue(particle->getEt(),getId(prefix,0));
+            }
             else if (_field=="Pt")
             {
                 store->storeValue(particle->getPt(),getId(prefix,0));
@@ -259,6 +267,10 @@ class AccessorTree
             }
             else if (_field=="All")
             {
+                _field="E";
+                store->storeValue(particle->getPt(),getId(prefix,0));
+                _field="Et";
+                store->storeValue(particle->getPt(),getId(prefix,0));
                 _field="Pt";
                 store->storeValue(particle->getPt(),getId(prefix,0));
                 _field="Eta";
@@ -395,7 +407,7 @@ class TTreeFiller : public pxl::Module
             std::vector<std::string> elem = split(_fields[i],':');
             _accessorTree->insert(elem);
         }
-        _accessorTree->toString();
+        //_accessorTree->toString();
 
 
     }
