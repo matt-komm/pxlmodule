@@ -130,41 +130,47 @@ class SimpleFinalStateMatching : public pxl::Module
 
     void addMatchToView(std::vector<pxl::Particle*>& gen, std::vector<pxl::Particle*>& reco,pxl::EventView* eventView, float(*matchFunction)(const pxl::Particle*, const pxl::Particle*))
     {
-        if (gen.size()<=reco.size())
+        for (unsigned iparticle=0; iparticle<std::max(gen.size(),reco.size()); ++iparticle)
         {
-            for (unsigned igen=0; igen<gen.size(); ++igen)
+            pxl::Particle* genMatch=0;
+            if (iparticle<gen.size())
             {
-                pxl::Particle* genMatch=gen[igen];
+                genMatch=gen[iparticle];
                 if (_copyOnlyFinalParticles)
                 {
                     genMatch = eventView->create<pxl::Particle>();
-                    genMatch->setName(gen[igen]->getName());
-                    copyParticleProperties(genMatch,gen[igen]);
+                    genMatch->setName(gen[iparticle]->getName());
+                    copyParticleProperties(genMatch,gen[iparticle]);
                 }
-                pxl::Particle* recoMatch = eventView->create<pxl::Particle>();
-                recoMatch->setName(reco[igen]->getName());
-                copyParticleProperties(recoMatch,reco[igen]);
-                recoMatch->linkMother(genMatch);
-                genMatch->setUserRecord("match_value",matchFunction(genMatch,recoMatch));
             }
-        }
-        else
-        {
-            for (unsigned ireco=0; ireco<reco.size(); ++ireco)
+            else
             {
-                pxl::Particle* genMatch=gen[ireco];
-                if (_copyOnlyFinalParticles)
-                {
-                    genMatch = eventView->create<pxl::Particle>();
-                    genMatch->setName(gen[ireco]->getName());
-                    copyParticleProperties(genMatch,gen[ireco]);
-                }
-                pxl::Particle* recoMatch = eventView->create<pxl::Particle>();
-                recoMatch->setName(reco[ireco]->getName());
-                copyParticleProperties(recoMatch,reco[ireco]);
-                recoMatch->linkMother(genMatch);
-                genMatch->setUserRecord("match_value",matchFunction(genMatch,recoMatch));
+                genMatch=eventView->create<pxl::Particle>();
+                genMatch->setName("MissingGen");
+                genMatch->setP4(0.0,0.0,0.0,0.0);
             }
+            pxl::Particle* recoMatch = eventView->create<pxl::Particle>();
+            if (iparticle<reco.size())
+            {
+                recoMatch->setName(reco[iparticle]->getName());
+                copyParticleProperties(recoMatch,reco[iparticle]);
+
+            }
+            else
+            {
+                recoMatch->setName("MissingReco");
+                recoMatch->setP4(0.0,0.0,0.0,0.0);
+            }
+            recoMatch->linkMother(genMatch);
+            if (iparticle<gen.size() && iparticle<reco.size())
+            {
+                genMatch->setUserRecord("match_value",deltaRmatch(genMatch,recoMatch));
+            }
+            else
+            {
+                genMatch->setUserRecord("match_value",-1);
+            }
+
         }
     }
 
