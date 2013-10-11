@@ -34,6 +34,8 @@ class SimpleFinalStateMatching : public pxl::Module
     bool _discardBTagging;
     bool _copyOnlyFinalParticles;
     
+    double _maxMatchValue;
+
 
     public:
     SimpleFinalStateMatching() :
@@ -47,7 +49,8 @@ class SimpleFinalStateMatching : public pxl::Module
         _inputRecoJetName("SelectedJet"),
         _inputRecoBJetName("SelectedBJet"),
         _discardBTagging(false),
-        _copyOnlyFinalParticles(true)
+        _copyOnlyFinalParticles(true),
+        _maxMatchValue(10)
     {
         _input = addSink("input", "input");
         _output = addSource("output", "output");
@@ -59,11 +62,15 @@ class SimpleFinalStateMatching : public pxl::Module
         addOption("discard bTagging","allows matches between jets and bjets",_discardBTagging);
         addOption("copy only final","copies only the final state generator particles",_copyOnlyFinalParticles);
         
+        addOption("max match value","matches beyond that value are considered as missing",_maxMatchValue);
+
         addOption("reco met","name of the reconstructed met",_inputRecoMETName);
         addOption("reco electon","names of the reconstructed electon",_inputRecoElectronName);
         addOption("reco muon","names of the reconstructed muon",_inputRecoMuonName);
         addOption("reco jet","name of the reconstructed jets",_inputRecoJetName);
         addOption("reco bjet","name of the reconstructed bjets",_inputRecoBJetName);
+
+
     }
 
     ~SimpleFinalStateMatching()
@@ -102,6 +109,8 @@ class SimpleFinalStateMatching : public pxl::Module
         getOption("discard bTagging",_discardBTagging);
         getOption("copy only final",_copyOnlyFinalParticles);
         
+        getOption("max match value",_maxMatchValue);
+
         getOption("reco met",_inputRecoMETName);
         getOption("reco electon",_inputRecoElectronName);
         getOption("reco muon",_inputRecoMuonName);
@@ -150,11 +159,10 @@ class SimpleFinalStateMatching : public pxl::Module
                 genMatch->setP4(0.0,0.0,0.0,0.0);
             }
             pxl::Particle* recoMatch = eventView->create<pxl::Particle>();
-            if (iparticle<reco.size())
+            if (iparticle<reco.size() && deltaRmatch(genMatch,reco[iparticle])<_maxMatchValue)
             {
                 recoMatch->setName(reco[iparticle]->getName());
                 copyParticleProperties(recoMatch,reco[iparticle]);
-
             }
             else
             {
@@ -162,7 +170,7 @@ class SimpleFinalStateMatching : public pxl::Module
                 recoMatch->setP4(0.0,0.0,0.0,0.0);
             }
             recoMatch->linkMother(genMatch);
-            if (iparticle<gen.size() && iparticle<reco.size())
+            if (iparticle<gen.size() && iparticle<reco.size() && deltaRmatch(genMatch,reco[iparticle])<_maxMatchValue)
             {
                 genMatch->setUserRecord("match_value",deltaRmatch(genMatch,recoMatch));
             }

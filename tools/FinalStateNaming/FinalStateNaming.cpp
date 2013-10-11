@@ -74,6 +74,11 @@ class FinalStateNaming : public pxl::Module
     {
     }
 
+    bool name_simple(std::vector<pxl::Particle*> particles)
+    {
+        //name FS only by id, e.g. id=1...5 -> jet
+    }
+
     bool name_tHq(std::vector<pxl::Particle*> particles)
     {
         bool foundLepton=false;
@@ -96,7 +101,6 @@ class FinalStateNaming : public pxl::Module
                     //----------------------------------------------------------------------------------------------------------------------------------------------
                     //TODO: handle this case, match the lepton to the gen lepton and not to the tau -> need to keep the information in gen particle pruner
                     //----------------------------------------------------------------------------------------------------------------------------------------------
-
                     particle->setName("tau_lepton");
                 }
             }
