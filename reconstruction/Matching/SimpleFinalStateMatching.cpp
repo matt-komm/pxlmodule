@@ -38,7 +38,7 @@ class SimpleFinalStateMatching : public pxl::Module
 
 
     public:
-    SimpleFinalStateMatching() :
+    SimpleFinalStateMatching():
         Module(),
         _inputGenEventViewName("Generated"),
         _inputRecoEventViewName("Reconstructed"),
