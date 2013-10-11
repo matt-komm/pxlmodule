@@ -168,6 +168,23 @@ class SimpleFinalStateMatching : public pxl::Module
             {
                 recoMatch->setName("MissingReco");
                 recoMatch->setP4(0.0,0.0,0.0,0.0);
+                if (abs(genMatch->getPdgNumber())==11)
+                {
+                    recoMatch->setName(_inputRecoElectronName);
+                }
+                else if (abs(genMatch->getPdgNumber())==13)
+                {
+                    recoMatch->setName(_inputRecoMuonName);
+                }
+                else if (abs(genMatch->getPdgNumber())==5)
+                {
+                    recoMatch->setName(_inputRecoBJetName);
+                }
+                else if (abs(genMatch->getPdgNumber())<5)
+                {
+                    recoMatch->setName(_inputRecoJetName);
+                }
+
             }
             recoMatch->linkMother(genMatch);
             if (iparticle<gen.size() && iparticle<reco.size() && deltaRmatch(genMatch,reco[iparticle])<_maxMatchValue)
