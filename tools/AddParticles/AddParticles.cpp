@@ -111,7 +111,9 @@ class AddParticles : public pxl::Module
                             particle->setName(_particleName);
                             particle->setCharge(_charge);
                             pxl::LorentzVector vec;
-                            vec.setRThetaPhi(_pt,_eta,_phi);
+                            double theta = 2.0*atan(exp(-_eta));
+                            double r =_pt/sin(theta);
+                            vec.setRThetaPhi(r,theta,_phi);
                             particle->setP4(vec);
                         }
                         
