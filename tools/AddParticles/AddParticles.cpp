@@ -110,7 +110,9 @@ class AddParticles : public pxl::Module
                             pxl::Particle* particle = eventView->create<pxl::Particle>();
                             particle->setName(_particleName);
                             particle->setCharge(_charge);
-                            particle->getVector().setRThetaPhi(_pt,_eta,_phi);
+                            pxl::LorentzVector vec;
+                            vec.setRThetaPhi(_pt,_eta,_phi);
+                            particle->setP4(vec);
                         }
                         
                     }
