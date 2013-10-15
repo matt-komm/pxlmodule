@@ -26,6 +26,8 @@ class LHCOConverter : public pxl::Module
     std::string _metName;
     std::string _photonName;
 
+    int _eventCount;
+
     public:
     LHCOConverter() :
         Module(),
@@ -36,7 +38,8 @@ class LHCOConverter : public pxl::Module
         _electronName("TightElectron"),
         _muonName("TightMuon"),
         _metName("MET"),
-        _photonName("TightPhoton")
+        _photonName("TightPhoton"),
+        _eventCount(0)
     {
         addSink("input", "Input");
         _output = addSource("output", "output");
@@ -115,7 +118,9 @@ class LHCOConverter : public pxl::Module
                     pxl::EventView* eventView = eventViews[ieventView];
                     if (eventView->getName()==_inputEventViewName)
                     {
+                        ++_eventCount;
                         LHCOEvent lhcoEvent;
+
                         lhcoEvent.setEventID(event->getUserRecord("Event number").toUInt32());
                         std::vector<pxl::Particle*> particles;
                         eventView->getObjectsOfType(particles);
@@ -179,7 +184,14 @@ class LHCOConverter : public pxl::Module
                                 );
                             }
                         }
+                        char* buf = new char[50];
+                        sprintf(buf,"num event: %i",_eventCount);
+                        lhcoEvent.setComment(buf);
+                        delete buf;
+                        lhcoEvent.writeComment(*ofs);
+                        //lhcoEvent.writeSummary(*ofs);
                         lhcoEvent.writeEvent(*ofs);
+
                     }
                 }
 
