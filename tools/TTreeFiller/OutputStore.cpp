@@ -2,7 +2,9 @@
 
 Tree::Tree(TFile* file, std::string name):
     INVALID(-100000),
-    _file(file)
+    _file(file),
+    _count(0),
+    _logger("Tree")
 {
     _tree = new TTree(name.c_str(),name.c_str());
     _tree->SetDirectory(file);
@@ -14,9 +16,10 @@ float* Tree::bookVariableAddress(std::string name)
     _variables[name]=address;
     TBranch* branch = _tree->Branch(name.c_str(),address);
     (*address)=INVALID;
-    
+    _logger(pxl::LOG_LEVEL_INFO ,"fill new variable '",name,"' int tree '",_tree->GetName(),"' with ",_count," empty entries");
     for (int cnt=0;cnt<_count; ++cnt)
     {
+
         branch->Fill();
     }
     return address;
@@ -43,7 +46,8 @@ void Tree::write()
     _tree->Write();
 }
 
-OutputStore::OutputStore(std::string filename)
+OutputStore::OutputStore(std::string filename):
+    _logger("OutputStore")
 {
     _file = new TFile(filename.c_str(),"RECREATE");
 }
@@ -53,6 +57,7 @@ Tree* OutputStore::getTree(std::string treeName)
     std::unordered_map<std::string,Tree*>::const_iterator elem = _treeMap.find(treeName.c_str());
     if (elem==_treeMap.end())
     {
+        _logger(pxl::LOG_LEVEL_INFO,"create new tree: ",treeName);
         _treeMap[treeName]=new Tree(_file, treeName);
         return _treeMap[treeName];
     } else {
