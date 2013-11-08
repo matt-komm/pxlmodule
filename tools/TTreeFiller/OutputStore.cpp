@@ -1,92 +1,92 @@
 #include "OutputStore.hpp"
 
-OutputStore::OutputStore(std::string filename):
-INVALID(-999999),
-defaultTreeName("default")
+Tree::Tree(TFile* file, std::string name):
+    INVALID(-100000),
+    _file(file)
 {
-    file = new TFile(filename.c_str(),"RECREATE");
-
-    count=0;
+    _tree = new TTree(name.c_str(),name.c_str());
+    _tree->SetDirectory(file);
 }
 
-void OutputStore::setDefaultTreeName(std::string treeName)
+float* Tree::bookVariableAddress(std::string name)
 {
-    defaultTreeName=treeName;
-}
-
-
-float* OutputStore::bookVariableAddress(std::string name, std::string treeName)
-{
-    variables[name+"__"+treeName]=new float(0);
-    float* address = getVariableAddress(name, treeName);
-    
-    TBranch* branch = getTree(treeName)->Branch(name.c_str(),address);
+    float* address = new float(0);
+    _variables[name]=address;
+    TBranch* branch = _tree->Branch(name.c_str(),address);
     (*address)=INVALID;
     
-    for (int cnt=0;cnt<count; ++cnt)
+    for (int cnt=0;cnt<_count; ++cnt)
     {
         branch->Fill();
     }
     return address;
 }
 
-float* OutputStore::getVariableAddress(std::string name, std::string treeName)
+float& Tree::getVariable(std::string name)
 {
-    std::unordered_map<std::string,float*>::const_iterator elem = variables.find((name+"__"+treeName).c_str());
-    if (elem==variables.end()) {
-        return NULL;
+    std::unordered_map<std::string,float*>::const_iterator elem = _variables.find(name.c_str());
+    if (elem==_variables.end()) {
+        return *bookVariableAddress(name);
+    } else {
+        return *elem->second;
+    }
+}
+
+void Tree::fill()
+{
+    ++_count;
+    _tree->Fill();
+}
+
+void Tree::write()
+{
+    _tree->Write();
+}
+
+OutputStore::OutputStore(std::string filename):
+    _defaultTreeName("default")
+{
+    _file = new TFile(filename.c_str(),"RECREATE");
+}
+
+Tree* OutputStore::getBranch(std::string treeName)
+{
+    std::unordered_map<std::string,Tree*>::const_iterator elem = _treeMap.find(treeName.c_str());
+    if (elem==_treeMap.end())
+    {
+        _treeMap[treeName]=new Tree(_file, treeName);
+        return _treeMap[treeName];
     } else {
         return elem->second;
     }
 }
 
-TTree* OutputStore::getTree(std::string treeName)
+void OutputStore::storeValue(const float value, std::string name)
 {
-    if (treeMap.find(treeName)==treeMap.end())
-    {
-        TTree* tree = new TTree(treeName.c_str(),treeName.c_str());
-        tree->SetDirectory(file);
-        treeMap[treeName]=tree;
-    }
-    return treeMap[treeName];
-
-}
-void OutputStore::storeValue(const float& value, std::string name)
-{
-    storeValue(value,name,defaultTreeName);
+    storeValue(value, name, _defaultTreeName);
 }
 
-void OutputStore::storeValue(const float& value, std::string name, std::string treeName)
+
+void OutputStore::storeValue(const float value, std::string name, std::string treeName)
 {
-    if (getVariableAddress(name, treeName)==NULL) {
-        (*bookVariableAddress(name, treeName))=value;
-    } else {
-        (*getVariableAddress(name, treeName))=value;
-    }
+    getBranch(treeName)->getVariable(name)=value;
 }
 
 void OutputStore::fill()
 {
-    //std::cout<<(*getVariableAddress("muon_reliso"))<<std::endl;
-    file->cd();
-    //tree->SetDirectory(file);
-    for (auto it = treeMap.begin(); it != treeMap.end(); ++it )
+    _file->cd();
+    for (auto it = _treeMap.begin(); it != _treeMap.end(); ++it )
     {
-        it->second->Fill();
+        it->second->fill();
     }
-    for ( auto it = variables.begin(); it != variables.end(); ++it ) {
-        (*it->second)=INVALID;
-    }
-    ++count;
 }
 
 void OutputStore::close()
 {
-    file->cd();
-    //tree->SetDirectory(file);
-    for (auto it = treeMap.begin(); it != treeMap.end(); ++it )
+    _file->cd();
+    for (auto it = _treeMap.begin(); it != _treeMap.end(); ++it )
     {
-        it->second->Write();
+        it->second->write();
     }
-    file->Close();
+    _file->Close();
 }
