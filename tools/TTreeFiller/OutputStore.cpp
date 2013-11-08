@@ -43,13 +43,12 @@ void Tree::write()
     _tree->Write();
 }
 
-OutputStore::OutputStore(std::string filename):
-    _defaultTreeName("default")
+OutputStore::OutputStore(std::string filename)
 {
     _file = new TFile(filename.c_str(),"RECREATE");
 }
 
-Tree* OutputStore::getBranch(std::string treeName)
+Tree* OutputStore::getTree(std::string treeName)
 {
     std::unordered_map<std::string,Tree*>::const_iterator elem = _treeMap.find(treeName.c_str());
     if (elem==_treeMap.end())
@@ -58,26 +57,6 @@ Tree* OutputStore::getBranch(std::string treeName)
         return _treeMap[treeName];
     } else {
         return elem->second;
-    }
-}
-
-void OutputStore::storeValue(const float value, std::string name)
-{
-    storeValue(value, name, _defaultTreeName);
-}
-
-
-void OutputStore::storeValue(const float value, std::string name, std::string treeName)
-{
-    getBranch(treeName)->getVariable(name)=value;
-}
-
-void OutputStore::fill()
-{
-    _file->cd();
-    for (auto it = _treeMap.begin(); it != _treeMap.end(); ++it )
-    {
-        it->second->fill();
     }
 }
 

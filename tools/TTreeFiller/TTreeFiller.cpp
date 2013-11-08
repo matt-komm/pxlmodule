@@ -123,7 +123,7 @@ class AccessorTree
         }
 
         template<class T>
-        void evaluateChildren(T* t, OutputStore* store, std::string prefix)
+        void evaluateChildren(T* t, Tree* store, std::string prefix)
         {
             for (unsigned ichildren=0;ichildren<_children.size();++ichildren)
             {
@@ -131,11 +131,11 @@ class AccessorTree
             }
         }
 
-        void evaluate(pxl::Event* event, OutputStore* store, std::string prefix)
+        void evaluate(pxl::Event* event, Tree* store, std::string prefix)
         {
             if (event->hasUserRecord(_field))
             {
-                store->storeValue(event->getUserRecord(_field).toFloat(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=event->getUserRecord(_field).toFloat();
             }
             else if (_field=="All")
             {
@@ -143,7 +143,7 @@ class AccessorTree
                 for (pxl::UserRecords::const_iterator it=ur.begin(); it!=ur.end();++it)
                 {
                     _field=it->first;
-                    store->storeValue(it->second.toFloat(),getId(prefix,0));
+                    store->getVariable(getId(prefix,0))=it->second.toFloat();
                 }
                 _field="All";
             }
@@ -164,11 +164,11 @@ class AccessorTree
             }
         }
 
-        void evaluate(pxl::EventView* eventView, OutputStore* store, std::string prefix)
+        void evaluate(pxl::EventView* eventView, Tree* store, std::string prefix)
         {
             if (eventView->hasUserRecord(_field))
             {
-                store->storeValue(eventView->getUserRecord(_field).toFloat(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=eventView->getUserRecord(_field).toFloat();
             }
             else if (_field=="All")
             {
@@ -176,7 +176,7 @@ class AccessorTree
                 for (pxl::UserRecords::const_iterator it=ur.begin(); it!=ur.end();++it)
                 {
                     _field=it->first;
-                    store->storeValue(it->second.toFloat(),getId(prefix,0));
+                    store->getVariable(getId(prefix,0))=it->second.toFloat();
                 }
                 _field="All";
             }
@@ -197,51 +197,51 @@ class AccessorTree
             }
         }
 
-        void evaluate(pxl::Particle* particle, OutputStore* store, std::string prefix)
+        void evaluate(pxl::Particle* particle, Tree* store, std::string prefix)
         {
             if (particle->hasUserRecord(_field))
             {
-                store->storeValue(particle->getUserRecord(_field),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getUserRecord(_field);
             }
             else if (_field=="E")
             {
-                store->storeValue(particle->getE(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getE();
             }
             else if (_field=="Et")
             {
-                store->storeValue(particle->getEt(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getEt();
             }
             else if (_field=="Pt")
             {
-                store->storeValue(particle->getPt(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getPt();
             }
             else if (_field=="Eta")
             {
-                store->storeValue(particle->getEta(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getEta();
             }
             else if (_field=="Phi")
             {
-                store->storeValue(particle->getPhi(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getPhi();
             }
             else if (_field=="Mass")
             {
-                store->storeValue(particle->getMass(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getMass();
             }
             else if (_field=="Px")
             {
-                store->storeValue(particle->getPx(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getPx();
             }
             else if (_field=="Py")
             {
-                store->storeValue(particle->getPy(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getPy();
             }
             else if (_field=="Pz")
             {
-                store->storeValue(particle->getPz(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getPz();
             }
             else if (_field=="Charge")
             {
-                store->storeValue(particle->getPz(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getPz();
             }
             else if (_field=="Mother")
             {
@@ -268,30 +268,30 @@ class AccessorTree
             else if (_field=="All")
             {
                 _field="E";
-                store->storeValue(particle->getPt(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getPt();
                 _field="Et";
-                store->storeValue(particle->getPt(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getPt();
                 _field="Pt";
-                store->storeValue(particle->getPt(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getPt();
                 _field="Eta";
-                store->storeValue(particle->getEta(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getEta();
                 _field="Phi";
-                store->storeValue(particle->getPhi(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getPhi();
                 _field="Px";
-                store->storeValue(particle->getPx(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getPx();
                 _field="Py";
-                store->storeValue(particle->getPy(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getPy();
                 _field="Pz";
-                store->storeValue(particle->getPz(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getPz();
                 _field="Mass";
-                store->storeValue(particle->getMass(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getMass();
                 _field="Charge";
-                store->storeValue(particle->getCharge(),getId(prefix,0));
+                store->getVariable(getId(prefix,0))=particle->getCharge();
                 pxl::UserRecords ur = particle->getUserRecords();
                 for (pxl::UserRecords::const_iterator it=ur.begin(); it!=ur.end();++it)
                 {
                     _field=it->first;
-                    store->storeValue(it->second.toFloat(),getId(prefix,0));
+                    store->getVariable(getId(prefix,0))=it->second.toFloat();
                 }
                 _field="All";
             }
@@ -324,7 +324,7 @@ class AccessorTree
     }
 
     template<class T>
-    void evaluate(T* t, OutputStore* store)
+    void evaluate(T* t, Tree* store)
     {
         _root->evaluateChildren(t,store,"");
     }
@@ -441,9 +441,9 @@ class TTreeFiller : public pxl::Module
             pxl::Event *event  = dynamic_cast<pxl::Event *> (sink->get());
             if (event)
             {
-                _outputStore->setDefaultTreeName(event->getUserRecord("Process"));
-                _accessorTree->evaluate(event,_outputStore);
-                _outputStore->fill();
+                Tree* tree = _outputStore->getTree(event->getUserRecord("Process"));
+                _accessorTree->evaluate(event,tree);
+                tree->fill();
                 _output->setTargets(event);
                 return _output->processTargets();
             }
