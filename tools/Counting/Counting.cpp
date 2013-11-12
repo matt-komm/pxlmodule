@@ -96,10 +96,12 @@ class Counting : public pxl::Module
     void print()
     {
         float runTime = ((float)clock() -totalTime)/CLOCKS_PER_SEC;
-        float eventsPerSecond=(_count-_eventDiff)/runTime;
+        float eventsPerSecond=(_count-_eventDiff)/((float)clock()-timeDiff);
         char buf[200];
         sprintf(buf,"%s - runtime: %7.1fs - processed events: %7.1i [%4.2fk ev./sec.]",_name.c_str(),runTime,(int)_count,eventsPerSecond/1000);
         std::cout<<buf<<std::endl;
+        timeDiff = clock();
+        _eventDiff=_count;
     }
 
     bool analyse(pxl::Sink *sink) throw (std::runtime_error)
@@ -119,8 +121,6 @@ class Counting : public pxl::Module
                 if (sec>_seconds && _seconds>0 && !_onlyFinal)
                 {
                     print();
-                    timeDiff = clock();
-                    _eventDiff=_count;
                 }
 
             }
