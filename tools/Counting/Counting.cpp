@@ -96,9 +96,10 @@ class Counting : public pxl::Module
     void print()
     {
         float runTime = ((float)clock() -totalTime)/CLOCKS_PER_SEC;
-        float eventsPerSecond=(_count-_eventDiff)/((float)clock()-timeDiff);
+        float eventsPerSecond=1.0*(_count-_eventDiff)/((float)(clock()-timeDiff)/CLOCKS_PER_SEC);
+        //std::cout<<(_count-_eventDiff)<<", "<<(float)(clock()-timeDiff)/CLOCKS_PER_SEC<<": "<<eventsPerSecond<<std::endl;
         char buf[200];
-        sprintf(buf,"%s - runtime: %7.1fs - processed events: %7.1i [%4.2fk ev./sec.]",_name.c_str(),runTime,(int)_count,eventsPerSecond/1000);
+        sprintf(buf,"%s - runtime: %7.1fs - processed events: %7.1i [%5.2fk ev./sec.]",_name.c_str(),runTime,(int)_count,eventsPerSecond/1000);
         std::cout<<buf<<std::endl;
         timeDiff = clock();
         _eventDiff=_count;
