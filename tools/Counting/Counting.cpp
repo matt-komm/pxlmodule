@@ -93,7 +93,7 @@ class Counting : public pxl::Module
         seconds-=h*60*60;
         int m = ((int)(seconds))/(60);
         seconds-=m*60;
-        sprintf(buf,"%02ih%02im%03.1fs",h,m,seconds);
+        sprintf(buf,"%2ih %2im %3.1fs",h,m,seconds);
     }
 
     void endJob()
