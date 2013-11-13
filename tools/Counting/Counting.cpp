@@ -85,12 +85,26 @@ class Counting : public pxl::Module
         getOption("seconds",_seconds);
         getOption("events",_events);
         getOption("only final",_onlyFinal);
+    }
 
+    void convertTime(char* buf, float seconds)
+    {
+        int h = ((int)(seconds))/(60*60);
+        seconds-=h*60*60;
+        int m = ((int)(seconds))/(60);
+        seconds-=m*60;
+        sprintf(buf,"%02ih%02im%03.1fs",h,m,seconds);
     }
 
     void endJob()
     {
-        print();
+        float runTime = ((float)clock() -totalTime)/CLOCKS_PER_SEC;
+        float eventsPerSecond=1.0*_count/runTime;
+        char buf[200];
+        char time[50];
+        convertTime(time,runTime);
+        sprintf(buf,"%s - runtime: %s - processed events: %7.1i [%5.2fk avg. ev./sec.] - Finished!",_name.c_str(),time,(int)_count,eventsPerSecond/1000);
+        std::cout<<buf<<std::endl;
     }
     
     void print()
@@ -99,7 +113,9 @@ class Counting : public pxl::Module
         float eventsPerSecond=1.0*(_count-_eventDiff)/((float)(clock()-timeDiff)/CLOCKS_PER_SEC);
         //std::cout<<(_count-_eventDiff)<<", "<<(float)(clock()-timeDiff)/CLOCKS_PER_SEC<<": "<<eventsPerSecond<<std::endl;
         char buf[200];
-        sprintf(buf,"%s - runtime: %7.1fs - processed events: %7.1i [%5.2fk ev./sec.]",_name.c_str(),runTime,(int)_count,eventsPerSecond/1000);
+        char time[50];
+        convertTime(time,runTime);
+        sprintf(buf,"%s - runtime: %s - processed events: %7.1i [%5.2fk ev./sec.]",_name.c_str(),time,(int)_count,eventsPerSecond/1000);
         std::cout<<buf<<std::endl;
         timeDiff = clock();
         _eventDiff=_count;
