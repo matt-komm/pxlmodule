@@ -125,8 +125,8 @@ class ScaleWeight : public pxl::Module
                             return _error->processTargets();
                         }
                         double alpha = LHAPDF::alphasPDF(qscale);
-                        double alpha_down = LHAPDF::alphasPDF(qscale*0.25);
-                        double alpha_up = LHAPDF::alphasPDF(qscale*4.);
+                        double alpha_down = LHAPDF::alphasPDF(qscale*0.5);
+                        double alpha_up = LHAPDF::alphasPDF(qscale*2.);
                         double factorization_scale = qscale*_factorization;
 
                         eventView->setUserRecord("alpha_s",alpha);
